@@ -246,14 +246,39 @@ STATICFILES_FINDERS = ("django.contrib.staticfiles.finders.FileSystemFinder",
  "django.contrib.staticfiles.finders.AppDirectoriesFinder", 
  "djangobower.finders.BowerFinder",)
 EOF
-    npm init -f
+    cat <<EOF >> package.json
+{
+  "name": "$DJANGO_PROJECT_NAME",
+  "version": "1.0.0",
+  "description": "$DJANGO_PROJECT_NAME",
+  "main": "index.js",
+  "repository": "$GIT_REPO",
+  "readme": "See $GIT_REPO",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  }
+}
+EOF
     npm install bower --save
     BOWER_APPS=""
     if [ "$GULP" = true ] ; then
-        npm install gulp --save
+        type gulp >/dev/null 2>&1 && "Gulp already installed globally" || { npm install -g gulp; }
+        npm install gulp --save-dev
+        cat <<EOF >> gulpfile.js
+var gulp = require('gulp');
+
+gulp.task('default', function() {
+  // place code for your default task here
+});
+EOF
     fi
     if [ "$GRUNT" = true ] ; then
-        npm install grunt-cli --save
+        type grunt >/dev/null 2>&1 && "Grunt already installed globally" || { npm install -g grunt-cli; }
     fi
     
     cat <<EOF >> .bowerrc
@@ -261,22 +286,38 @@ EOF
   "directory": "components"
 }
 EOF
-    if [ "$JQUERY" = true ] ; then
-        BOWER_APPS="$BOWER_APPS 'jquery',"
-    fi
-    if [ "$BOOTSTRAP" = true ] ; then
-        BOWER_APPS="$BOWER_APPS 'bootstrap',"
-    fi
-    if [ "$FOUNDATION" = true ] ; then
-        BOWER_APPS="$BOWER_APPS 'foundation',"
-    fi
-    if [ "$FONTAWESOME" = true ] ; then
-        BOWER_APPS="$BOWER_APPS 'fontawesome',"
-    fi
-    cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
+    if [ "$USE_HEROKU" = true ] ; then
+        if [ "$JQUERY" = true ] ; then
+            BOWER_APPS="$BOWER_APPS 'jquery',"
+        fi
+        if [ "$BOOTSTRAP" = true ] ; then
+            BOWER_APPS="$BOWER_APPS 'bootstrap',"
+        fi
+        if [ "$FOUNDATION" = true ] ; then
+            BOWER_APPS="$BOWER_APPS 'foundation',"
+        fi
+        if [ "$FONTAWESOME" = true ] ; then
+            BOWER_APPS="$BOWER_APPS 'font-awesome',"
+        fi
+        cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py
 BOWER_INSTALLED_APPS = ($BOWER_APPS)
 EOF
-    python manage.py bower install
+        python manage.py bower install
+    else
+        bower init
+        if [ "$JQUERY" = true ] ; then
+            ./node_modules/bower/bin/bower install jquery --save-dev
+        fi
+        if [ "$BOOTSTRAP" = true ] ; then
+            ./node_modules/bower/bin/bower install bootstrap --save-dev
+        fi
+        if [ "$FOUNDATION" = true ] ; then
+            ./node_modules/bower/bin/bower install foundation --save-dev
+        fi
+        if [ "$FONTAWESOME" = true ] ; then
+            ./node_modules/bower/bin/bower install font-awesome --save-dev
+        fi
+    fi
 fi
 
     # Bugfix (my own, I): This evaluates different after the script is run. Unsure why
