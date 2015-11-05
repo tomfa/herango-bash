@@ -505,7 +505,6 @@ EOF
     <link href='https://fonts.googleapis.com/css?family=Roboto+Mono:400,300,500' rel='stylesheet' type='text/css'>
     <style>
         section {
-            font-family: 'Roboto Mono', ; 
             font-weight: 400;
             font-size: 1.4rem;
             box-sizing: border-box;
@@ -515,13 +514,14 @@ EOF
             padding: 1rem;
             float: left;
         }
-        p, ul { font-size: 1.4rem; }
+        p, ul { font-size: 1.4rem; max-width: 550px;}
         code {
             padding: 0.5rem; 
             margin-top: 2rem; 
             display: block;
             overflow: scroll;
-
+            background-color: #000000;
+            color: #5CFF09;
         }
         h1 { 
             font-size: 4rem; 
@@ -543,13 +543,16 @@ EOF
 
         .herango {
             width: 100%;
-            background-color: #E7E7E7;
+            background-color: #FFFFFF;
             color: #555555;
         }
         .bash {
             width: 100%;
             background-color: #555555;
             color: #E7E7E7;
+        }
+        .btn {
+            margin: 3px;
         }
 
         .desktop-only { display: none }
@@ -584,10 +587,14 @@ EOF
 {% endblock %}
 
 {% block content %}
+    <a class="desktop-only" href="https://github.com/tomfa/herango-bash">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png">
+    </a>
+
     <h1 class="mobile-only">Herango Bash</h1>
     <section class="herango">
         <h1 class="desktop-only">Herango</h1>
-        <p>I'm a Django-app with:</p>
+        <p>I am your Django-app with:</p>
         <ul>
 EOF
 if [[ "$GULP" = true ]]; then
@@ -638,7 +645,9 @@ fi
             <code>curl -O https://raw.githubusercontent.com/tomfa/herango-bash/master/install.sh ; sh install.sh </code>
         </p>
         <p class="sign">
-            <a class="button btn btn-primary" href="http://github.com/tomfa/herango-bash">Fork the script on github</a>
+            <a class="button btn btn-primary" href="https://github.com/tomfa/herango-bash/issues">Request other packages</a>
+            <a class="button btn btn-danger" href="https://github.com/tomfa/herango-bash/issues">Found a bug?</a>
+            <a class="button btn btn-success mobile-only" href="http://github.com/tomfa/herango-bash">Fork the script on github</a>
         </p>
     </section>
 {% endblock %}
