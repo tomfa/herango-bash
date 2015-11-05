@@ -1,0 +1,147 @@
+
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Herango-Bash, Django on Heroku in 60 seconds.">
+    <meta name="author" content="tomas@webutvikling.org">
+
+    <!-- Open Graph data -->
+    <meta property="og:title" content="Herango-Bash, Django on Heroku in 60 seconds." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tomfa.github.io/herango-bash/" />
+    <meta property="og:image" content="https://tomfa.github.io/herango-bash/bash.png" />
+    <meta property="og:description" content="Herango-Bash, Django on Heroku in 60 seconds." />
+
+    <title>Herango-Bash, Django on Heroku in 60 seconds.</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Mono:400,300,500' rel='stylesheet' type='text/css'>
+
+    <style>
+        * {padding: 0; margin: 0; box-sizing: border-box; }
+        html { font-size: 12px; margin: 0; padding: 0; }
+        section {
+            font-weight: 400;
+            font-size: 1.4rem;
+            box-sizing: border-box;
+            margin: 0;
+            color: white;
+            text-align: left;
+            padding: 1rem;
+            float: left;
+        }
+        p, ul { font-size: 1.4rem; max-width: 550px;}
+        code {
+            padding: 0.5rem; 
+            margin-top: 2rem; 
+            display: block;
+            overflow: scroll;
+            background-color: #000000;
+            color: #5CFF09;
+        }
+        h1 { 
+            font-size: 4rem; 
+            font-family: 'Roboto Mono', ; 
+            font-weight: 300;
+            padding: 1rem;
+        }
+        ul {
+            list-style: none;
+        }
+
+        .bash h1{
+            color: #FDFDFD;
+        }
+
+        .herango h1{
+            color: #555555;
+        }
+
+        .herango {
+            width: 100%;
+            background-color: #FFFFFF;
+            color: #555555;
+        }
+        .bash {
+            width: 100%;
+            background-color: #555555;
+            color: #E7E7E7;
+        }
+        .btn {
+            margin: 3px;
+        }
+
+        .desktop-only { display: none }
+
+        @media screen and (min-width: 767px) {
+            .herango, .bash {
+                min-height: 100vh;
+            }
+            h1 {
+                font-size: 4rem;
+                padding: 1rem 0;
+            }
+            .bash {
+                width: 70%; 
+            }
+            .herango {
+                width: 30%;
+                text-align: right;
+            }
+            .mobile-only {
+                display: none;
+            }
+            .desktop-only {
+                display: block;
+            }
+        }
+        .sign {
+            margin-top: 2rem;
+            font-weight: 500;
+        }
+    </style>
+
+
+</head>
+<body>
+    <a class="desktop-only" href="https://github.com/tomfa/herango-bash">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png">
+    </a>
+
+    <h1 class="mobile-only">Herango Bash</h1>
+    <section class="herango">
+        <h1 class="desktop-only">Herango</h1>
+        <p>In 60 seconds, I could be your Django-app with:</p>
+        <ul>
+          <li></li>
+          <li>Bower</li>
+          <li>Gulp or Grunt</li>
+          <li>Bootstrap or Foudation</li>
+          <li>Jquery (or just not)</li>
+          <li>FontAwesome</li>
+          <li>Google Analytics</li>
+        </ul>
+        <p>Live on Heroku</p>
+    </section>
+    <section class="bash">
+        <h1 class="desktop-only">Bash</h1>
+        <p>
+            Herango-Bash is just a bash-script. It helps you quickly setup Django and push it to Heroku. Real fast. SuperASAP.
+        </p>
+        <p>
+            As long as you're connected to the internet, you can always run this script with the following command via the terminal:
+            <code>curl -O https://raw.githubusercontent.com/tomfa/herango-bash/master/install.sh ; sh install.sh </code>
+        </p>
+        <p class="sign">
+            <a class="btn btn-primary" href="https://github.com/tomfa/herango-bash/issues">Request other packages</a>
+            <a class="btn btn-danger" href="https://github.com/tomfa/herango-bash/issues">Found a bug?</a>
+            <a class="btn btn-success mobile-only" href="http://github.com/tomfa/herango-bash">Fork this on github</a>
+        </p>
+    </section>
+
+</body>
+</html>
