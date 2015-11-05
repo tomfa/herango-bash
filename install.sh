@@ -70,27 +70,37 @@ function textInput {
 
 
 ## ENSURING WE HAVE REQUIREMENTS
-type git >/dev/null 2>&1 || [ "$USE_GIT" = false ] || { echo >&2 "I require git but it's not installed.  Please install with 'brew install git' or see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"; exit 1; }
-type python >/dev/null 2>&1 || { echo >&2 "I require python but it's not installed.  Please install with 'brew install python' or see https://www.python.org/downloads/"; exit 1; }
-type pip >/dev/null 2>&1 || { echo >&2 "I require pip but it's not installed. Please install with 'curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python'"; exit 1; }
-type virtualenv >/dev/null 2>&1 || { echo >&2 "I require virtualenv but it's not installed.  Please install with 'pip install virtualenv'"; exit 1; } 
-type heroku >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require heroku but it's not installed.  Please install with 'brew install heroku' or see toolbelt.heroku.com."; exit 1; }
-type pg_config >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require postgres but it's not installed.  Please install with 'brew install postgres' or see www.postgresql.org/download/"; exit 1; }
-type npm >/dev/null 2>&1 || [ "$USE_NPM" = false ] || { echo >&2 "I require npm but it's not installed.  Please install with 'brew install node' or see nodejs.org/download/"; exit 1; }
+MISSING_REQUIREMENT=false;
 
+type git >/dev/null 2>&1 || [ "$USE_GIT" = false ] || { echo >&2 "I require git but it's not installed.  Please install with 'brew install git' or see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"; MISSING_REQUIREMENT=true; }
+type python >/dev/null 2>&1 || { echo >&2 "I require python but it's not installed.  Please install with 'brew install python' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
+type pip >/dev/null 2>&1 || { echo >&2 "I require pip but it's not installed. Please install with 'curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python'"; MISSING_REQUIREMENT=true; }
+type virtualenv >/dev/null 2>&1 || { echo >&2 "I require virtualenv but it's not installed.  Please install with 'pip install virtualenv'"; MISSING_REQUIREMENT=true; }
+type heroku >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require heroku but it's not installed.  Please install with 'brew install heroku' or see toolbelt.heroku.com."; MISSING_REQUIREMENT=true; }
+type pg_config >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require postgres but it's not installed.  Please install with 'brew install postgres' or see www.postgresql.org/download/"; MISSING_REQUIREMENT=true; }
+type npm >/dev/null 2>&1 || [ "$USE_NPM" = false ] || { echo >&2 "I require npm but it's not installed.  Please install with 'brew install node' or see nodejs.org/download/"; MISSING_REQUIREMENT=true; }
+
+if [ "$MISSING_REQUIREMENT" = true ] ; then
+    type brew >/dev/null 2>&1 || { echo >&2 "Brew is recommended, but not found. It can be installed with 'ruby -e \$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)' or see http://brew.sh"; }
+    trueFalseInputDefFalse "CONTINUE" "Requirements are not met. You should install these first. \nDo you wish to continue anyway (not recommended)?"
+    if [ "$CONTINUE" = false ] ; then
+        exit 1;
+    fi
+fi
 
 ## GETTING INPUTS
-trueFalseInputDefTrue "USE_GIT" "Are you using git"
+trueFalseInputDefTrue "USE_GIT" "Should I initialize a git repository?"
 if [ "$USE_GIT" = true ] ; then
     nonEmptyTextInput "GIT_REPO" "URL to git repository" "git@github.com:gituser/reponame.git"
-    trueFalseInputDefTrue "DEV_BRANCH" "Would you like me to make a dev-branch (And make it default branch)?"
+    trueFalseInputDefTrue "DEV_BRANCH" "Would you like me to make a branch 'dev' (and make it the default branch)?"
 fi
 nonEmptyTextInput "DJANGO_PROJECT_NAME" "Django project name" "myproject"
-trueFalseInputDefTrue "USE_HEROKU" "Are you using heroku"
+trueFalseInputDefTrue "USE_HEROKU" "Should I set up the project to be Heroku-compatible?"
 if [ "$USE_HEROKU" = true ] ; then
-    trueFalseInputDefFalse "NEW_HEROKU" "Should I spin up a heroku instance with this app for you?"
-    textInput "HEROKU_DOMAINS" "(optional) Domain to be forwarded to heroku" "example.com"
-    # trueFalseInputDefTrue "AWS_INTEGRATION" "TODO: Want me to create a AWS S3 file bucket for media files and link it?"
+    trueFalseInputDefFalse "NEW_HEROKU" "Should I also spin up a heroku instance with this app for you?"
+    if [ "$NEW_HEROKU" = true ] ; then
+        textInput "HEROKU_DOMAINS" "(optional) Domain to be forwarded to heroku" "example.com"
+    fi
 fi
 
 trueFalseInputDefTrue "PACKAGES" "Would you like to browse our selection of packages (Bootstrap, jQuery etc)?"
@@ -123,35 +133,35 @@ mkdir $DJANGO_PROJECT_NAME
 cd $DJANGO_PROJECT_NAME
 
 if [ "$USE_GIT" = true ] ; then
-    echo "script: -> Initializing repository for $GIT_REPO" 
+    echo "\nscript: -> Initializing repository for $GIT_REPO"
 	git init
 	git remote add origin $GIT_REPO
 fi
 
 # Installing project requirements in virtual environment
-echo "script: -> Installing python requirements"
+echo "\nscript: -> Installing python requirements"
 virtualenv env
 source env/bin/activate 
 if [ "$USE_HEROKU" = true ] ; then
-	pip install django-toolbelt
-else
-	pip install Django
-	pip install dj-database-url==0.3.0
-	pip install dj-static==0.0.6
-fi
-if [ "$PACKAGES" = true ] ; then
-    pip install django-bower
-    cat <<EOF >> .buildpacks
+	pip install django-toolbelt==0.0.1
+    if [ "$PACKAGES" = true ] ; then
+        pip install django-bower==5.0.4
+        cat <<EOF >> .buildpacks
 https://github.com/heroku/heroku-buildpack-nodejs.git
 https://github.com/amanjain/heroku-buildpack-python-with-django-bower.git
 EOF
+    fi
+else
+	pip install Django==1.8.6
+	pip install dj-database-url==0.3.0
+	pip install dj-static==0.0.6
 fi
 
 # Creating django project
 django-admin startproject $DJANGO_PROJECT_NAME .
 
 # Add django config
-echo "script: -> Creating django settings"
+echo "\nscript: -> Creating django settings"
 
 cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
 # AUTO-GENERATED CONFIG
@@ -227,7 +237,7 @@ TEMPLATES = [{
 EOF
 
 if [ "$PACKAGES" = true ] ; then
-    echo "script: -> Setting up node and bower components"
+    echo "\nscript: -> Setting up node and bower components"
     cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
 INSTALLED_APPS = INSTALLED_APPS + ('djangobower',)
 BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, '../static')
@@ -318,7 +328,7 @@ EOF
 
 
 if [ "$USE_HEROKU" = true ] ; then
-	echo "script: -> Setting up files for heroku"
+	echo "\nscript: -> Setting up files for heroku"
 cat > Procfile << EOF
 web: gunicorn $DJANGO_PROJECT_NAME.wsgi --log-file -
 EOF
@@ -334,11 +344,11 @@ application = Cling(get_wsgi_application())
 EOF
 fi
 
-echo "script: -> Exporting requirements to requirements.txt"
+echo "\nscript: -> Exporting requirements to requirements.txt"
 pip freeze > requirements.txt  # Export pip requirements to file
 
 if [ "$DEMO_APP" = true ] ; then
-    echo "script: -> Creating demo app"
+    echo "\nscript: -> Creating demo app"
     python manage.py startapp $DEMO_NAME
     
     cat <<EOF >> $DJANGO_PROJECT_NAME/settings/base.py 
@@ -612,12 +622,12 @@ EOF
 
 fi
 
-echo "script: -> Collecting static files and migrating"
+echo "\nscript: -> Collecting static files and migrating"
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
 
 if [ "$USE_GIT" = true ] ; then
-    echo "script: -> Configuring git"
+    echo "\nscript: -> Configuring git"
 # Ignore certain files from being added to git
 cat > .gitignore << EOF
 env
@@ -640,7 +650,7 @@ fi
 
 if [ "$USE_HEROKU" = true ] ; then
     if [ "$NEW_HEROKU" = true ] ; then
-        echo "script: -> Spinning up a new heroku" 
+        echo "\nscript: -> Spinning up a new heroku"
         heroku create
         git push heroku master
         heroku ps:scale web=1
