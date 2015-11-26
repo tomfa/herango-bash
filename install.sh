@@ -704,6 +704,7 @@ if [ "$USE_HEROKU" = true ] ; then
     if [ "$NEW_HEROKU" = true ] ; then
         echo "\nscript: -> Spinning up a new heroku"
         heroku create
+	heroku buildpacks:set https://github.com/heroku/heroku-buildpack-multi.git
         git push heroku master
         heroku ps:scale web=1
         if ! [ "$HEROKU_DOMAINS" = "" ] ; then
@@ -714,6 +715,7 @@ if [ "$USE_HEROKU" = true ] ; then
         echo "  This app can now be published to heroku with:"
         echo "  > cd $DJANGO_PROJECT_NAME"
         echo "  > heroku create"
+        echo "  > heroku buildpacks:set https://github.com/heroku/heroku-buildpack-multi.git"
         echo "  > git push heroku master"
         echo "  > heroku ps:scale web=1	"
     fi
