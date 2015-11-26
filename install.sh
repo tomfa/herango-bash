@@ -89,14 +89,14 @@ if [ "$MISSING_REQUIREMENT" = true ] ; then
 fi
 
 ## GETTING INPUTS
-trueFalseInputDefTrue "USE_GIT" "Should I initialize a git repository?"
+trueFalseInputDefTrue "USE_GIT" "Should I initialize a git repository (necessary to push to heroku)?"
 if [ "$USE_GIT" = true ] ; then
-    nonEmptyTextInput "GIT_REPO" "URL to git repository" "git@github.com:gituser/reponame.git"
+    textInput "GIT_REPO" "URL to existing git repository (leave empty if none)" "git@github.com:gituser/reponame.git"
     trueFalseInputDefTrue "DEV_BRANCH" "Would you like me to make a branch 'dev' (and make it the default branch)?"
 fi
 nonEmptyTextInput "DJANGO_PROJECT_NAME" "Django project name" "myproject"
 trueFalseInputDefTrue "USE_HEROKU" "Should I set up the project to be Heroku-compatible?"
-if [ "$USE_HEROKU" = true ] ; then
+if [ "$USE_HEROKU" = true ] && [ "$USE_GIT" = true ] ; then
     trueFalseInputDefFalse "NEW_HEROKU" "Should I also spin up a heroku instance with this app for you?"
     if [ "$NEW_HEROKU" = true ] ; then
         textInput "HEROKU_DOMAINS" "(optional) Domain to be forwarded to heroku" "example.com"
@@ -135,7 +135,9 @@ cd $DJANGO_PROJECT_NAME
 if [ "$USE_GIT" = true ] ; then
     echo "\nscript: -> Initializing repository for $GIT_REPO"
 	git init
-	git remote add origin $GIT_REPO
+        if [ ! "$GIT_REPO" = "" ] ; then
+	    git remote add origin $GIT_REPO
+        fi
 fi
 
 # Installing project requirements in virtual environment
@@ -148,7 +150,7 @@ if [ "$USE_HEROKU" = true ] ; then
         pip install django-bower==5.0.4
         cat <<EOF >> .buildpacks
 https://github.com/heroku/heroku-buildpack-nodejs.git
-https://github.com/amanjain/heroku-buildpack-python-with-django-bower.git
+https://github.com/tomfa/heroku-buildpack-python-with-django-bower.git
 EOF
     fi
 else
