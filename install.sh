@@ -144,6 +144,10 @@ fi
 echo "\nscript: -> Installing python requirements"
 virtualenv env
 source env/bin/activate 
+pip install Django==1.8.6
+pip install dj-database-url==0.3.0
+pip install dj-static==0.0.6
+
 if [ "$USE_HEROKU" = true ] ; then
 	pip install django-toolbelt==0.0.1
     if [ "$PACKAGES" = true ] ; then
@@ -153,10 +157,6 @@ https://github.com/heroku/heroku-buildpack-nodejs.git
 https://github.com/heroku/heroku-buildpack-python.git
 EOF
     fi
-else
-	pip install Django==1.8.6
-	pip install dj-database-url==0.3.0
-	pip install dj-static==0.0.6
 fi
 
 # Creating django project
