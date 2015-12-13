@@ -147,10 +147,10 @@ source env/bin/activate
 if [ "$USE_HEROKU" = true ] ; then
 	pip install django-toolbelt==0.0.1
     if [ "$PACKAGES" = true ] ; then
-        pip install django-bower==5.0.4
+        npm install bower --save
         cat <<EOF >> .buildpacks
 https://github.com/heroku/heroku-buildpack-nodejs.git
-https://github.com/tomfa/heroku-buildpack-python-with-django-bower.git
+https://github.com/heroku/heroku-buildpack-python.git
 EOF
     fi
 else
@@ -240,14 +240,6 @@ EOF
 
 if [ "$PACKAGES" = true ] ; then
     echo "\nscript: -> Setting up node and bower components"
-    cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
-INSTALLED_APPS = INSTALLED_APPS + ('djangobower',)
-BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, '../static')
-BOWER_PATH = os.path.join(BASE_DIR, '../node_modules/bower/bin/bower')
-STATICFILES_FINDERS = ("django.contrib.staticfiles.finders.FileSystemFinder",
- "django.contrib.staticfiles.finders.AppDirectoriesFinder", 
- "djangobower.finders.BowerFinder",)
-EOF
     cat <<EOF >> package.json
 {
   "name": "$DJANGO_PROJECT_NAME",
@@ -257,20 +249,21 @@ EOF
   "repository": "$GIT_REPO",
   "readme": "See $GIT_REPO",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1;",
+    "postinstall": "echo \"Installing bower packages\"; bower install;"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-  }
+  },
+  "cacheDirectories": ["node_modules", "components"]
 }
 EOF
     npm install bower --save
-    BOWER_APPS=""
     if [ "$GULP" = true ] ; then
         type gulp >/dev/null 2>&1 && "Gulp already installed globally" || { npm install -g gulp; }
-        npm install gulp --save-dev
+        npm install gulp --save
         cat <<EOF >> gulpfile.js
 var gulp = require('gulp');
 
@@ -281,6 +274,7 @@ EOF
     fi
     if [ "$GRUNT" = true ] ; then
         type grunt >/dev/null 2>&1 && "Grunt already installed globally" || { npm install -g grunt-cli; }
+        npm install grunt-cli --save
     fi
     
     cat <<EOF >> .bowerrc
@@ -288,45 +282,29 @@ EOF
   "directory": "components"
 }
 EOF
-    if [ "$USE_HEROKU" = true ] ; then
-        if [ "$JQUERY" = true ] ; then
-            BOWER_APPS="$BOWER_APPS 'jquery',"
-        fi
-        if [ "$BOOTSTRAP" = true ] ; then
-            BOWER_APPS="$BOWER_APPS 'bootstrap',"
-        fi
-        if [ "$FOUNDATION" = true ] ; then
-            BOWER_APPS="$BOWER_APPS 'foundation',"
-        fi
-        if [ "$FONTAWESOME" = true ] ; then
-            BOWER_APPS="$BOWER_APPS 'font-awesome',"
-        fi
-        cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py
-BOWER_INSTALLED_APPS = ($BOWER_APPS)
+    cat <<EOF >> bower.json
+{
+  "name": "$DJANGO_PROJECT_NAME",
+  "description": "$DJANGO_PROJECT_NAME",
+  "main": "",
+  "license": "",
+  "moduleType": [],
+  "homepage": ""
+}
 EOF
-        python manage.py bower install
-    else
-        bower init
-        if [ "$JQUERY" = true ] ; then
-            ./node_modules/bower/bin/bower install jquery --save-dev
-        fi
-        if [ "$BOOTSTRAP" = true ] ; then
-            ./node_modules/bower/bin/bower install bootstrap --save-dev
-        fi
-        if [ "$FOUNDATION" = true ] ; then
-            ./node_modules/bower/bin/bower install foundation --save-dev
-        fi
-        if [ "$FONTAWESOME" = true ] ; then
-            ./node_modules/bower/bin/bower install font-awesome --save-dev
-        fi
+    if [ "$JQUERY" = true ] ; then
+        ./node_modules/bower/bin/bower install jquery --save
+    fi
+    if [ "$BOOTSTRAP" = true ] ; then
+        ./node_modules/bower/bin/bower install bootstrap --save
+    fi
+    if [ "$FOUNDATION" = true ] ; then
+        ./node_modules/bower/bin/bower install foundation --save
+    fi
+    if [ "$FONTAWESOME" = true ] ; then
+        ./node_modules/bower/bin/bower install font-awesome --save
     fi
 fi
-
-    # Bugfix (my own, I): This evaluates different after the script is run. Unsure why
-    cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
-BOWER_PATH = os.path.join(BASE_DIR, '../../node_modules/bower/bin/bower')
-BOWER_COMPONENTS_ROOT = os.path.join(BASE_DIR, '../../static')
-EOF
 
 mkdir $DJANGO_PROJECT_NAME/settings
 mv $DJANGO_PROJECT_NAME/settings.py $DJANGO_PROJECT_NAME/settings/base.py
