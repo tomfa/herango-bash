@@ -115,7 +115,7 @@ if [ "$DEMO_APP" = true ] ; then
     nonEmptyTextInput "DEMO_NAME" "What's the name of the demo app?" "main"
 fi
 
-textInput "DJANGO_VERSION" "What Django version would you like to use (default 1.11)?" "1.8"
+textInput "DJANGO_VERSION" "What Django version would you like to use (default 2.0)?" "1.11"
 
 ## ACTION!
 mkdir $DJANGO_PROJECT_NAME
@@ -137,11 +137,11 @@ else
     virtualenv .venv
 fi
 source .venv/bin/activate
-if [ ! "$DJANGO_VERSION" = "" ] ; then
-    pip install Django==$DJANGO_VERSION
-else
-    pip install Django==1.11
+if [ "$DJANGO_VERSION" = "" ] ; then
+    DJANGO_VERSION=2.0
 fi
+
+pip install Django==$DJANGO_VERSION
 pip install dj-database-url==0.3.0
 pip install dj-static==0.0.6
 
@@ -296,10 +296,17 @@ if [ "$DEMO_APP" = true ] ; then
     cat <<EOF >> $DJANGO_PROJECT_NAME/settings/base.py
 INSTALLED_APPS = INSTALLED_APPS + ['$DEMO_NAME']
 EOF
-    cat <<EOF >> $DJANGO_PROJECT_NAME/urls.py
+    if [[ $DJANGO_VERSION == 2* ]] ; then
+        cat <<EOF >> $DJANGO_PROJECT_NAME/urls.py
+from $DEMO_NAME.views import home
+urlpatterns.append(path('', home, name='home'));
+EOF
+    else
+        cat <<EOF >> $DJANGO_PROJECT_NAME/urls.py
 from $DEMO_NAME.views import home
 urlpatterns.append(url(r'^$', home, name='home'));
 EOF
+    fi
     mkdir -p $DEMO_NAME/templates/$DEMO_NAME
 
     cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
