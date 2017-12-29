@@ -82,6 +82,7 @@ type npm >/dev/null 2>&1 || [ "$USE_NPM" = false ] || { echo >&2 "I require npm 
 trueFalseInputDefTrue "USE_PYTHON3" "Do you want to use python3 instead of python?"
 if [ "$USE_PYTHON3" = true ] ; then
     type python3 >/dev/null 2>&1 || { echo >&2 "I require python3 but it's not installed.  Please install with 'brew install python3' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
+    type pyvenv >/dev/null 2>&1 || { echo >&2 "I require pyvenv but it's not installed."; MISSING_REQUIREMENT=true; }
 else
     type python >/dev/null 2>&1 || { echo >&2 "I require python but it's not installed.  Please install with 'brew install python' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
 fi
@@ -109,28 +110,9 @@ if [ "$USE_HEROKU" = true ] && [ "$USE_GIT" = true ] ; then
     fi
 fi
 
-trueFalseInputDefTrue "PACKAGES" "Would you like to browse our selection of packages (Bootstrap, jQuery etc)?"
-if [ "$PACKAGES" = true ] ; then
-
-    trueFalseInputDefTrue "JQUERY" "Do you want jQuery?"
-    trueFalseInputDefFalse "BOOTSTRAP" "Do you want Bootstrap?"
-    if [ "$BOOTSTRAP" = false ] ; then
-        trueFalseInputDefTrue "FOUNDATION" "How about Foundation?"
-    fi
-    trueFalseInputDefTrue "GULP" "Do you want Gulp?"
-    if [ "$GULP" = false ] ; then
-        trueFalseInputDefTrue "GRUNT" "Do you want Grunt, instead then?"
-    fi
-    trueFalseInputDefTrue "FONTAWESOME" "Do you want FontAwesome-icons?"
-fi
-
 trueFalseInputDefTrue "DEMO_APP" "Want me to create an app with a default base template?"
 if [ "$DEMO_APP" = true ] ; then
     nonEmptyTextInput "DEMO_NAME" "What's the name of the demo app?" "main"
-    trueFalseInputDefFalse "USE_GOOGLE_ANALYTICS" "Do you want Google Analytics included on the dummypage?"
-    if [ "$USE_GOOGLE_ANALYTICS" = true ] ; then
-        nonEmptyTextInput "GOOGLE_ANALYTICS_ID" "What's your Google Analytics ID?" "UA-12345-6"
-    fi
 fi
 
 textInput "DJANGO_VERSION" "What Django version would you like to use (default 1.11)?" "1.8"
@@ -165,13 +147,6 @@ pip install dj-static==0.0.6
 
 if [ "$USE_HEROKU" = true ] ; then
 	pip install django-toolbelt==0.0.1
-    if [ "$PACKAGES" = true ] ; then
-        npm install bower --save
-        cat <<EOF >> .buildpacks
-https://github.com/heroku/heroku-buildpack-nodejs.git
-https://github.com/heroku/heroku-buildpack-python.git
-EOF
-    fi
 fi
 
 # Creating django project
@@ -251,74 +226,6 @@ TEMPLATES = [{
         },
     }]
 EOF
-
-if [ "$PACKAGES" = true ] ; then
-    echo "\nscript: -> Setting up node and bower components"
-    cat <<EOF >> package.json
-{
-  "name": "$DJANGO_PROJECT_NAME",
-  "version": "1.0.0",
-  "description": "$DJANGO_PROJECT_NAME",
-  "main": "index.js",
-  "repository": "$GIT_REPO",
-  "readme": "See $GIT_REPO",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1;",
-    "postinstall": "echo \"Installing bower packages\"; bower install;"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-  },
-  "cacheDirectories": ["node_modules", "components"]
-}
-EOF
-    npm install bower --save
-    if [ "$GULP" = true ] ; then
-        type gulp >/dev/null 2>&1 && "Gulp already installed globally" || { npm install -g gulp; }
-        npm install gulp --save
-        cat <<EOF >> gulpfile.js
-var gulp = require('gulp');
-
-gulp.task('default', function() {
-  // place code for your default task here
-});
-EOF
-    fi
-    if [ "$GRUNT" = true ] ; then
-        type grunt >/dev/null 2>&1 && "Grunt already installed globally" || { npm install -g grunt-cli; }
-        npm install grunt-cli --save
-    fi
-
-    cat <<EOF >> .bowerrc
-{
-  "directory": "components"
-}
-EOF
-    cat <<EOF >> bower.json
-{
-  "name": "$DJANGO_PROJECT_NAME",
-  "description": "$DJANGO_PROJECT_NAME",
-  "main": "",
-  "license": "",
-  "moduleType": [],
-  "homepage": ""
-}
-EOF
-    if [ "$JQUERY" = true ] ; then
-        ./node_modules/bower/bin/bower install jquery --save
-    fi
-    if [ "$BOOTSTRAP" = true ] ; then
-        ./node_modules/bower/bin/bower install bootstrap --save
-    fi
-    if [ "$FOUNDATION" = true ] ; then
-        ./node_modules/bower/bin/bower install foundation --save
-    fi
-    if [ "$FONTAWESOME" = true ] ; then
-        ./node_modules/bower/bin/bower install font-awesome --save
-    fi
-fi
 
 mkdir $DJANGO_PROJECT_NAME/settings
 mv $DJANGO_PROJECT_NAME/settings.py $DJANGO_PROJECT_NAME/settings/base.py
@@ -415,30 +322,7 @@ EOF
     <meta property="og:description" content="{{ page_description|default:"TODO: Default desciption" }}" />
 
     <title>{{ page_title|default:"TODO: Default title" }}</title>
-EOF
-    if [ "$FOUNDATION" = true ] ; then
-        cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- Package: Foundation -->
-    <link href="static/components/foundation/css/foundation.min.css" rel="stylesheet">
 
-EOF
-    fi
-    if [ "$BOOTSTRAP" = true ] ; then
-        cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- Package: Bootstrap -->
-    <link href="static/components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-
-EOF
-    fi
-    if [ "$FONTAWESOME" = true ] ; then
-        cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- Package: Font Awesome -->
-    <link href="static/components/font-awesome/css/font-awesome.min.css" rel="stylesheet">
-
-EOF
-    fi
-
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
     <!-- Custom style for base-template -->
     <link href="static/css/style.css" rel="stylesheet">
 
@@ -451,43 +335,7 @@ EOF
 
 {% block content %}
 {% endblock %}
-EOF
-    if [ "$USE_GOOGLE_ANALYTICS" = true ] ; then
-        mkdir static
-        mkdir static/js
-        cat <<EOF >> static/js/ga.js
-var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', '$GOOGLE_ANALYTICS_ID']);
-  _gaq.push(['_trackPageview']);
 
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-EOF
-
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- Google Analytics -->
-    <script src="{% static "js/ga.js" %}"></script>
-
-EOF
-    fi
-    if [ "$JQUERY" = true ] ; then
-        cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- jQuery -->
-    <script src="{% static "components/jquery/dist/jquery.min.js" %}"></script>
-
-EOF
-    fi
-    if [ "$BOOTSTRAP" = true ] ; then
-        cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
-    <!-- Bootstrap Core JavaScript -->
-    <script src="{% static "components/bootstrap/dist/js/bootstrap.min.js" %}"></script>
-
-EOF
-    fi
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
 {% block script %}
 {% endblock %}
 
@@ -553,6 +401,20 @@ EOF
 
         .desktop-only { display: none }
 
+        .button {
+            padding: 5px 10px;
+            border: none;
+            background-color: #dedede;
+            border-radius: 3px;
+            color: black;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .button:hover {
+            opacity: 0.8;
+        }
+
         @media screen and (min-width: 767px) {
             .herango, .bash {
                 min-height: 100vh;
@@ -593,41 +455,6 @@ EOF
         <p>I am your Django-app with:</p>
         <ul>
 EOF
-if [[ "$GULP" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Gulp</li>
-EOF
-fi
-if [[ "$GRUNT" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Grunt</li>
-EOF
-fi
-if [[ "$BOOTSTRAP" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Bootstrap</li>
-EOF
-fi
-if [[ "$FOUNDATION" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Foundation</li>
-EOF
-fi
-if [[ "$JQUERY" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>jQuery</li>
-EOF
-fi
-if [[ "$FONTAWESOME" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Font-Awesome</li>
-EOF
-fi
-if [[ "$USE_GOOGLE_ANALYTICS" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
-            <li>Google Analytics</li>
-EOF
-fi
     cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
         </ul>
     </section>
