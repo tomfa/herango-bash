@@ -21,7 +21,7 @@ function trueFalseInputDefTrue {
             if [ "$INPUT" = "y" ] || [ "$INPUT" = "" ] ; then
                 printf -v $1 true
                 break
-            else 
+            else
                 echo "Invalid input."
             fi
         fi
@@ -40,7 +40,7 @@ function trueFalseInputDefFalse {
             if [ "$INPUT" = "n" ] || [ "$INPUT" = "" ] ; then
                 printf -v $1 false
                 break
-            else 
+            else
                 echo "Invalid input."
             fi
         fi
@@ -73,12 +73,18 @@ function textInput {
 MISSING_REQUIREMENT=false;
 
 type git >/dev/null 2>&1 || [ "$USE_GIT" = false ] || { echo >&2 "I require git but it's not installed.  Please install with 'brew install git' or see https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"; MISSING_REQUIREMENT=true; }
-type python >/dev/null 2>&1 || { echo >&2 "I require python but it's not installed.  Please install with 'brew install python' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
 type pip >/dev/null 2>&1 || { echo >&2 "I require pip but it's not installed. Please install with 'curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python'"; MISSING_REQUIREMENT=true; }
 type virtualenv >/dev/null 2>&1 || { echo >&2 "I require virtualenv but it's not installed.  Please install with 'pip install virtualenv'"; MISSING_REQUIREMENT=true; }
 type heroku >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require heroku but it's not installed.  Please install with 'brew install heroku' or see toolbelt.heroku.com."; MISSING_REQUIREMENT=true; }
 type pg_config >/dev/null 2>&1 || [ "$USE_HEROKU" = false ] || { echo >&2 "I require postgres but it's not installed.  Please install with 'brew install postgres' or see www.postgresql.org/download/"; MISSING_REQUIREMENT=true; }
 type npm >/dev/null 2>&1 || [ "$USE_NPM" = false ] || { echo >&2 "I require npm but it's not installed.  Please install with 'brew install node' or see nodejs.org/download/"; MISSING_REQUIREMENT=true; }
+
+trueFalseInputDefTrue "USE_PYTHON3" "Do you want to use python3 instead of python?"
+if [ "$USE_PYTHON3" = true ] ; then
+    type python3 >/dev/null 2>&1 || { echo >&2 "I require python3 but it's not installed.  Please install with 'brew install python3' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
+else
+    type python >/dev/null 2>&1 || { echo >&2 "I require python but it's not installed.  Please install with 'brew install python' or see https://www.python.org/downloads/"; MISSING_REQUIREMENT=true; }
+fi
 
 if [ "$MISSING_REQUIREMENT" = true ] ; then
     type brew >/dev/null 2>&1 || { echo >&2 "Brew is recommended, but not found. It can be installed with 'ruby -e \$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)' or see http://brew.sh"; }
@@ -126,7 +132,8 @@ if [ "$DEMO_APP" = true ] ; then
         nonEmptyTextInput "GOOGLE_ANALYTICS_ID" "What's your Google Analytics ID?" "UA-12345-6"
     fi
 fi
-# trueFalseInputDefTrue "DEMO_MODEL" "(TODO) Want me to create an dummy model app?"
+
+textInput "DJANGO_VERSION" "What Django version would you like to use (default 1.11)?" "1.8"
 
 ## ACTION!
 mkdir $DJANGO_PROJECT_NAME
@@ -135,16 +142,24 @@ cd $DJANGO_PROJECT_NAME
 if [ "$USE_GIT" = true ] ; then
     echo "\nscript: -> Initializing repository for $GIT_REPO"
 	git init
-        if [ ! "$GIT_REPO" = "" ] ; then
-	    git remote add origin $GIT_REPO
-        fi
+    if [ ! "$GIT_REPO" = "" ] ; then
+        git remote add origin $GIT_REPO
+    fi
 fi
 
 # Installing project requirements in virtual environment
 echo "\nscript: -> Installing python requirements"
-virtualenv env
-source env/bin/activate 
-pip install Django==1.8.6
+if [ "$USE_PYTHON3" = true ] ; then
+    virtualenv -p $(pyenv which python3) .venv
+else
+    virtualenv .venv
+fi
+source .venv/bin/activate
+if [ ! "$DJANGO_VERSION" = "" ] ; then
+    pip install Django==$DJANGO_VERSION
+else
+    pip install Django==1.11
+fi
 pip install dj-database-url==0.3.0
 pip install dj-static==0.0.6
 
@@ -165,7 +180,7 @@ django-admin startproject $DJANGO_PROJECT_NAME .
 # Add django config
 echo "\nscript: -> Creating django settings"
 
-cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py 
+cat <<EOF >> $DJANGO_PROJECT_NAME/settings.py
 # AUTO-GENERATED CONFIG
 # Parse database configuration from $DATABASE_URL
 import dj_database_url
@@ -232,7 +247,6 @@ TEMPLATES = [{
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.core.context_processors.static'
             ],
         },
     }]
@@ -276,7 +290,7 @@ EOF
         type grunt >/dev/null 2>&1 && "Grunt already installed globally" || { npm install -g grunt-cli; }
         npm install grunt-cli --save
     fi
-    
+
     cat <<EOF >> .bowerrc
 {
   "directory": "components"
@@ -309,7 +323,7 @@ fi
 mkdir $DJANGO_PROJECT_NAME/settings
 mv $DJANGO_PROJECT_NAME/settings.py $DJANGO_PROJECT_NAME/settings/base.py
 
-cat <<EOF >> $DJANGO_PROJECT_NAME/settings/example_local.py 
+cat <<EOF >> $DJANGO_PROJECT_NAME/settings/example_local.py
 """
     Local settings. Copy this file to local.py to enable local settings.
 """
@@ -332,9 +346,9 @@ DATABASES = {
 }
 EOF
 
-cp $DJANGO_PROJECT_NAME/settings/example_local.py $DJANGO_PROJECT_NAME/settings/local.py 
+cp $DJANGO_PROJECT_NAME/settings/example_local.py $DJANGO_PROJECT_NAME/settings/local.py
 
-cat <<EOF >> $DJANGO_PROJECT_NAME/settings/__init__.py 
+cat <<EOF >> $DJANGO_PROJECT_NAME/settings/__init__.py
 from $DJANGO_PROJECT_NAME.settings.base import *
 import os
 
@@ -371,15 +385,16 @@ pip freeze > requirements.txt  # Export pip requirements to file
 if [ "$DEMO_APP" = true ] ; then
     echo "\nscript: -> Creating demo app"
     python manage.py startapp $DEMO_NAME
-    
-    cat <<EOF >> $DJANGO_PROJECT_NAME/settings/base.py 
-INSTALLED_APPS = INSTALLED_APPS + ('$DEMO_NAME',)
+
+    cat <<EOF >> $DJANGO_PROJECT_NAME/settings/base.py
+INSTALLED_APPS = INSTALLED_APPS + ['$DEMO_NAME']
 EOF
     cat <<EOF >> $DJANGO_PROJECT_NAME/urls.py
-urlpatterns.append(url(r'^$', '$DEMO_NAME.views.home', name='home'));
+from $DEMO_NAME.views import home
+urlpatterns.append(url(r'^$', home, name='home'));
 EOF
     mkdir -p $DEMO_NAME/templates/$DEMO_NAME
-    
+
     cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
 {% load staticfiles %}
 <!DOCTYPE html>
@@ -388,7 +403,7 @@ EOF
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ STATIC_URL }}img/logo-favicon.png">
+    <link rel="icon" type="image/png" href="static/img/logo-favicon.png">
     <meta name="description" content="{{ page_description|default:"TODO: Default desciption" }}">
     <meta name="author" content="TODO: tomfa@github">
 
@@ -404,28 +419,28 @@ EOF
     if [ "$FOUNDATION" = true ] ; then
         cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
     <!-- Package: Foundation -->
-    <link href="{{ STATIC_URL }}components/foundation/css/foundation.min.css" rel="stylesheet">
+    <link href="static/components/foundation/css/foundation.min.css" rel="stylesheet">
 
 EOF
     fi
     if [ "$BOOTSTRAP" = true ] ; then
         cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
     <!-- Package: Bootstrap -->
-    <link href="{{ STATIC_URL }}components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="static/components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 
 EOF
     fi
     if [ "$FONTAWESOME" = true ] ; then
         cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
     <!-- Package: Font Awesome -->
-    <link href="{{ STATIC_URL }}components/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="static/components/font-awesome/css/font-awesome.min.css" rel="stylesheet">
 
 EOF
     fi
 
     cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/base.html
     <!-- Custom style for base-template -->
-    <link href="{{ STATIC_URL }}css/style.css" rel="stylesheet">
+    <link href="static/css/style.css" rel="stylesheet">
 
     <!-- Custom style for specific template -->
     {% block style %}
@@ -438,6 +453,7 @@ EOF
 {% endblock %}
 EOF
     if [ "$USE_GOOGLE_ANALYTICS" = true ] ; then
+        mkdir static
         mkdir static/js
         cat <<EOF >> static/js/ga.js
 var _gaq = _gaq || [];
@@ -496,16 +512,16 @@ EOF
         }
         p, ul { font-size: 1.4rem; max-width: 550px;}
         code {
-            padding: 0.5rem; 
-            margin-top: 2rem; 
+            padding: 0.5rem;
+            margin-top: 2rem;
             display: block;
             overflow: scroll;
             background-color: #000000;
             color: #5CFF09;
         }
-        h1 { 
-            font-size: 4rem; 
-            font-family: 'Roboto Mono', ; 
+        h1 {
+            font-size: 4rem;
+            font-family: 'Roboto Mono', ;
             font-weight: 300;
             padding: 1rem;
         }
@@ -546,7 +562,7 @@ EOF
                 padding: 1rem 0;
             }
             .bash {
-                width: 70%; 
+                width: 70%;
             }
             .herango {
                 width: 30%;
@@ -578,7 +594,7 @@ EOF
         <ul>
 EOF
 if [[ "$GULP" = true ]]; then
-    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html 
+    cat <<EOF >> $DEMO_NAME/templates/$DEMO_NAME/home.html
             <li>Gulp</li>
 EOF
 fi
@@ -634,7 +650,7 @@ fi
 
 {% block script %}
     {# Includes parent script block #}
-    {{ block.super }}  
+    {{ block.super }}
 
     {# Your custom javascript goes here #}
     <script>true</script>
@@ -644,6 +660,7 @@ EOF
 def home(request):
     return render(request, '$DEMO_NAME/home.html')
 EOF
+    mkdir static
     mkdir static/css
     cat <<EOF >> static/css/style.css
 * {padding: 0; margin: 0; box-sizing: border-box; }
@@ -660,11 +677,11 @@ if [ "$USE_GIT" = true ] ; then
     echo "\nscript: -> Configuring git"
 # Ignore certain files from being added to git
 cat > .gitignore << EOF
-env
 *.py[cod]
 .DS_Store
 staticfiles
 .idea
+.venv
 local.py
 node_modules/*
 static/components
@@ -709,8 +726,8 @@ if [ "$USE_GIT" = true ] ; then
 
     if [ "$USE_HEROKU" = true ]; then
         echo "-----------------------------------------------"
-        echo "  Automatic deploy from github to heroku can be" 
-        echo "  configured from https://dashboard.heroku.com/" 
+        echo "  Automatic deploy from github to heroku can be"
+        echo "  configured from https://dashboard.heroku.com/"
         echo "      -> app -> deploy -> github"
     fi
 fi
