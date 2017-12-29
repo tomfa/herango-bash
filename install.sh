@@ -99,7 +99,7 @@ fi
 trueFalseInputDefTrue "USE_GIT" "Should I initialize a git repository (necessary to push to heroku)?"
 if [ "$USE_GIT" = true ] ; then
     textInput "GIT_REPO" "URL to existing git repository (leave empty if none)" "git@github.com:gituser/reponame.git"
-    trueFalseInputDefTrue "DEV_BRANCH" "Would you like me to make a branch 'dev' (and make it the default branch)?"
+    trueFalseInputDefFalse "DEV_BRANCH" "Would you like me to make a branch 'dev' (and make it the default branch)?"
 fi
 nonEmptyTextInput "DJANGO_PROJECT_NAME" "Django project name" "myproject"
 trueFalseInputDefTrue "USE_HEROKU" "Should I set up the project to be Heroku-compatible?"
